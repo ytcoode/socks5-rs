@@ -1,20 +1,60 @@
 #![deny(warnings)]
 
+use mio::net::TcpListener;
+use mio::*;
+use net2::unix::UnixTcpBuilderExt;
+use net2::TcpBuilder;
+use slab::Slab;
 use std::io;
-use std::net::TcpListener;
-use std::thread;
+use std::io::ErrorKind;
 
+mod buf;
 mod client;
+mod server;
+mod util;
+
+const SERVER: Token = Token(0);
 
 fn main() -> io::Result<()> {
-    let listener = TcpListener::bind("0.0.0.0:9999")?;
+    let addr = "0.0.0.0:9999"; // TODO port
+    let sock = TcpBuilder::new_v4()?;
 
-    for r in listener.incoming() {
-        let stream = r?;
-        thread::spawn(move || {
-            client::handle_client(stream);
-        });
+    if cfg!(unix) {
+        sock.reuse_address(true)?;
+        sock.reuse_port(true)?;
     }
 
-    Ok(())
+    sock.bind(addr)?;
+    let listener = sock.listen(1024)?;
+    let listener = TcpListener::from_std(listener)?;
+    // let listener = TcpListener::bind(addr)?;
+
+    let mut poll = Poll::new()?;
+    let mut slab = Slab::new();
+    let mut events = Events::with_capacity(1024);
+
+    poll.registry()
+        .register(&listener, SERVER, Interests::READABLE)?;
+
+    loop {
+        poll.poll(&mut events, None)?;
+        for event in events.iter() {
+            match event.token() {
+                SERVER => {
+                    server::accept(&listener, &mut slab, poll.registry())?;
+                }
+                Token(t) => {
+                    let k = util::token_to_key(t);
+                    if let Some(c) = slab.get_mut(k) {
+                        if let Err(e) = c.handle(t, event, poll.registry()) {
+                            slab.remove(k);
+                            if e.kind() != ErrorKind::Other {
+                                println!("ERR: {:?}", e);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

@@ -1,83 +1,90 @@
-use std::io::Read;
-use std::io::Write;
-use std::net::Ipv4Addr;
-use std::net::TcpStream;
+use crate::buf::Buf;
+use crate::util;
+use mio::event::Event;
+use mio::net::TcpStream;
+use mio::*;
+use std::io;
+use std::io::Error;
+use std::io::ErrorKind;
+use State::*;
 
-const VERSION: u8 = 0x05;
+mod negotiate;
+mod relay;
+mod shutdown;
 
-pub fn handle_client(mut s: TcpStream) {
-    s.set_nodelay(true).expect("set_nodelay failed");
+#[derive(Debug)]
+pub enum State {
+    SelectMethodReq,
+    SelectMethodReply,
+    ConnectReq,
+    ConnectReply,
+    Relay,
+    Shutdown,
+}
 
-    /*
+pub struct Client {
+    s1: TcpStream,
+    b1: Buf,
 
-    +----+----------+----------+
-    |VER | NMETHODS | METHODS  |
-    +----+----------+----------+
-    | 1  |    1     | 1 to 255 |
-    +----+----------+----------+
+    s2: Option<TcpStream>, // 如果为None表示还没有建立到target的连接
+    b2: Buf,
 
-    */
+    token: usize,
+    state: State,
+}
 
-    let mut buf = [0; 2];
-    s.read_exact(&mut buf).unwrap();
+impl Client {
+    pub fn new(s1: TcpStream, token: usize) -> Self {
+        Client {
+            s1,
+            b1: Buf::new(),
 
-    if buf[0] != VERSION {
-        panic!("illegal version");
+            s2: None,
+            b2: Buf::new(),
+
+            token,
+            state: SelectMethodReq,
+        }
     }
 
-    let mut vec = vec![0; buf[1] as usize];
-    s.read_exact(&mut vec).unwrap();
-
-    // TODO select a valid method
-
-    /*
-
-    +----+--------+
-    |VER | METHOD |
-    +----+--------+
-    | 1  |   1    |
-    +----+--------+
-
-    */
-
-    s.write_all(&[VERSION, 0]).unwrap();
-
-    /*
-
-    +----+-----+-------+------+----------+----------+
-    |VER | CMD |  RSV  | ATYP | DST.ADDR | DST.PORT |
-    +----+-----+-------+------+----------+----------+
-    | 1  |  1  | X'00' |  1   | Variable |    2     |
-    +----+-----+-------+------+----------+----------+
-
-     */
-
-    let mut buf = [0; 4];
-    s.read_exact(&mut buf).unwrap();
-
-    if buf[0] != VERSION {
-        panic!("illegal version");
+    fn set_state(&mut self, state: State) {
+        //        println!("state: {:?} -> {:?}", self.state, state);
+        self.state = state;
     }
 
-    if buf[1] != 1 {
-        panic!("CMD must be connect");
+    pub fn handle(&mut self, t: usize, e: &Event, r: &Registry) -> io::Result<()> {
+        assert!(t == self.token || t == util::peer_token(self.token));
+
+        if e.is_readable() {
+            match self.state {
+                SelectMethodReq => negotiate::select_method_req(self, r)?,
+                SelectMethodReply => (),
+                ConnectReq => negotiate::connect_req(self, r)?,
+                ConnectReply => (),
+                Relay => relay::relay_in(self, r, t)?,
+                Shutdown => shutdown::shutdown(self, r)?,
+            }
+        }
+
+        if e.is_writable() {
+            match self.state {
+                SelectMethodReq => (),
+                SelectMethodReply => negotiate::select_method_reply(self, r)?,
+                ConnectReq => (),
+                ConnectReply => negotiate::connect_reply(self, r)?,
+                Relay => relay::relay_out(self, r, t)?,
+                Shutdown => shutdown::shutdown(self, r)?,
+            }
+        }
+
+        if e.is_hup() {
+            return Err(Error::new(ErrorKind::UnexpectedEof, "hup"));
+        }
+
+        if e.is_error() {
+            return Err(Error::new(ErrorKind::UnexpectedEof, "err"));
+        }
+
+        Ok(())
     }
-
-    if buf[2] != 0 {
-        panic!("illegal rsv");
-    }
-
-    if buf[3] != 1 {
-        panic!("atyp must be ipv4");
-    }
-
-    let mut buf = [0; 6];
-    s.read_exact(&mut buf).unwrap();
-
-    let ip = Ipv4Addr::new(buf[0], buf[1], buf[2], buf[3]);
-    let port = (buf[4] as u16) << 8 | buf[5] as u16;
-
-    let _t = TcpStream::connect((ip, port)).unwrap();
-
-    unimplemented!();
 }

@@ -7,3 +7,6 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+mio = { git = "https://github.com/tokio-rs/mio.git" }
+net2 = "0.2"
+slab = "0.4.2"
