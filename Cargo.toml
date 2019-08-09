@@ -1,6 +1,6 @@
 [package]
 name = "socks5-rs"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["wangyuntao <wyt.daily@gmail.com>"]
 edition = "2018"
 

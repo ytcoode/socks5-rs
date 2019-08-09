@@ -87,7 +87,7 @@ dependencies = [
 
 [[package]]
 name = "socks5-rs"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "mio 0.7.0 (git+https://github.com/tokio-rs/mio.git)",
  "net2 0.2.33 (registry+https://github.com/rust-lang/crates.io-index)",

@@ -14,7 +14,7 @@ pub fn accept(
     loop {
         match listener.accept() {
             Err(ref e) if e.kind() == ErrorKind::WouldBlock => return Ok(()),
-            Err(e) => panic!(e),
+            Err(e) => panic!("listener.accept: {:?}", e),
             Ok((s, _)) => {
                 let e = slab.vacant_entry();
                 let t = util::key_to_token(e.key());

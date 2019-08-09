@@ -5,6 +5,7 @@ use mio::*;
 use net2::unix::UnixTcpBuilderExt;
 use net2::TcpBuilder;
 use slab::Slab;
+use std::env;
 use std::io;
 use std::io::ErrorKind;
 
@@ -16,7 +17,13 @@ mod util;
 const SERVER: Token = Token(0);
 
 fn main() -> io::Result<()> {
-    let addr = "0.0.0.0:9999"; // TODO port
+    let mut addr = "0.0.0.0:".to_owned();
+    if let Some(port) = env::args().nth(1) {
+        addr.push_str(&port);
+    } else {
+        addr.push_str("9999");
+    }
+
     let sock = TcpBuilder::new_v4()?;
 
     if cfg!(unix) {
