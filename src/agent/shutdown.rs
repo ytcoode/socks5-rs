@@ -1,10 +1,10 @@
-use super::Client;
+use super::Agent;
 use mio::*;
 use std::io;
 use std::io::Error;
 use std::io::ErrorKind;
 
-pub fn shutdown(c: &mut Client, _r: &Registry) -> io::Result<()> {
+pub fn shutdown(c: &mut Agent, _r: &Registry) -> io::Result<()> {
     let s1 = &mut c.s1;
     let s2 = c.s2.as_mut().unwrap();
 

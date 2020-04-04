@@ -1,5 +1,5 @@
 use super::relay;
-use super::Client;
+use super::Agent;
 use super::State;
 use crate::util;
 use mio::net::TcpStream;
@@ -13,7 +13,7 @@ use std::str;
 
 const VERSION: u8 = 0x05;
 
-pub fn select_method_req(c: &mut Client, r: &Registry) -> io::Result<()> {
+pub fn select_method_req(c: &mut Agent, r: &Registry) -> io::Result<()> {
     // b is Buf.
     let b = &mut c.b1;
     // read bytes to b from TcpStream.
@@ -80,7 +80,7 @@ pub fn select_method_req(c: &mut Client, r: &Registry) -> io::Result<()> {
     select_method_reply(c, r)
 }
 
-pub fn select_method_reply(c: &mut Client, r: &Registry) -> io::Result<()> {
+pub fn select_method_reply(c: &mut Agent, r: &Registry) -> io::Result<()> {
     // 将 Client TCPStream 的数据写入Client的buf2
     c.b2.write(&mut c.s1)?;
     if c.b2.len() > 0 {
@@ -92,7 +92,7 @@ pub fn select_method_reply(c: &mut Client, r: &Registry) -> io::Result<()> {
     connect_req(c, r)
 }
 
-pub fn connect_req(c: &mut Client, r: &Registry) -> io::Result<()> {
+pub fn connect_req(c: &mut Agent, r: &Registry) -> io::Result<()> {
     let b = &mut c.b1;
     let ea = b.read(&mut c.s1)?;
 
@@ -220,7 +220,7 @@ pub fn connect_req(c: &mut Client, r: &Registry) -> io::Result<()> {
     connect_reply(c, r)
 }
 
-pub fn connect_reply(c: &mut Client, r: &Registry) -> io::Result<()> {
+pub fn connect_reply(c: &mut Agent, r: &Registry) -> io::Result<()> {
     c.b2.write(&mut c.s1)?;
     if c.b2.len() > 0 {
         return Ok(()); // 还有剩余字节没写完，等待epollout

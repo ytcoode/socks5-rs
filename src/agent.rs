@@ -29,7 +29,7 @@ pub enum State {
     Shutdown,
 }
 
-pub struct Client {
+pub struct Agent {
     // This Should be Client Connection.
     s1: TcpStream,
     // This Should be Client Buffer.
@@ -47,25 +47,32 @@ pub struct Client {
     state: State,
 }
 
-impl Client {
+impl Agent {
     pub fn new(s1: TcpStream, token: usize) -> Self {
-        Client {
+        Agent {
+
+            // Initializer Client.
             s1,
             b1: Buf::new(),
 
-            s2: None,
+            // Initializer Server.
+            s2: None, // Not Connect to Target Host.
             b2: Buf::new(),
 
             token,
+
+            // Initializer Status to SelectMethodReq.
             state: SelectMethodReq,
         }
     }
 
     fn set_state(&mut self, state: State) {
-        //        println!("state: {:?} -> {:?}", self.state, state);
+        // Open Logger.
+        println!("state: {:?} -> {:?}", self.state, state);
         self.state = state;
     }
 
+    // Coer Logic.
     pub fn handle(&mut self, t: usize, e: &Event, r: &Registry) -> io::Result<()> {
         assert!(t == self.token || t == util::peer_token(self.token));
 
@@ -98,6 +105,7 @@ impl Client {
             return Err(Error::new(ErrorKind::UnexpectedEof, "hup"));
         }
 
+        // An error event occurred.
         if e.is_error() {
             return Err(Error::new(ErrorKind::UnexpectedEof, "err"));
         }

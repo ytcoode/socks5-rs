@@ -10,7 +10,7 @@ use std::io;
 use std::io::ErrorKind;
 
 mod buf;
-mod client;
+mod agent;
 mod server;
 mod util;
 

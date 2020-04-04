@@ -1,12 +1,12 @@
 use super::shutdown;
-use super::Client;
+use super::Agent;
 use super::State;
 use crate::util;
 use mio::*;
 use std::io;
 use std::net::Shutdown;
 
-pub fn relay_in(c: &mut Client, r: &Registry, token: usize) -> io::Result<()> {
+pub fn relay_in(c: &mut Agent, r: &Registry, token: usize) -> io::Result<()> {
     let (s1, s2, b) = if token == c.token {
         (&mut c.s1, c.s2.as_mut().unwrap(), &mut c.b1)
     } else if let Some(s2) = &mut c.s2 {
@@ -35,6 +35,6 @@ pub fn relay_in(c: &mut Client, r: &Registry, token: usize) -> io::Result<()> {
     shutdown::shutdown(c, r)
 }
 
-pub fn relay_out(c: &mut Client, r: &Registry, token: usize) -> io::Result<()> {
+pub fn relay_out(c: &mut Agent, r: &Registry, token: usize) -> io::Result<()> {
     relay_in(c, r, util::peer_token(token))
 }

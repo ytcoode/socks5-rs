@@ -1,4 +1,4 @@
-use crate::client::Client;
+use crate::agent::*;
 use crate::util;
 use mio::net::TcpListener;
 use mio::*;
@@ -8,7 +8,7 @@ use std::io::ErrorKind;
 
 pub fn accept(
     listener: &TcpListener,
-    slab: &mut Slab<Client>,
+    slab: &mut Slab<Agent>,
     registry: &Registry,
 ) -> io::Result<()> {
     loop {
@@ -20,7 +20,7 @@ pub fn accept(
                 let t = util::key_to_token(e.key());
                 s.set_nodelay(true)?;
                 registry.register(&s, Token(t), Interests::READABLE | Interests::WRITABLE)?;
-                e.insert(Client::new(s, t));
+                e.insert(Agent::new(s, t));
             }
         }
     }
