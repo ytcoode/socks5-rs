@@ -59,6 +59,7 @@ impl Buf {
         }
     }
 
+    // ???
     pub fn skip(&mut self, n: usize) {
         assert!(n <= self.len);
         self.idx += n;
@@ -83,19 +84,25 @@ impl Buf {
     // 从Read中读数据到buf中
     pub fn read<R: Read>(&mut self, r: &mut R) -> io::Result<bool> {
         loop {
+            // 得到了一个蜜汁切片
             let mut bs = self.io_slice_read();
             if bs.len() == 0 {
                 // buf满了，此时buf内部肯定已包含该状态所需的所有数据
                 assert_eq!(self.len, CAP);
                 break;
             }
+            
+            // Read data to r from bs. 
             match r.read_vectored(&mut bs[..]) {
                 Ok(0) => break, // 即使socket已经关闭，我们也要先处理完buf内的数据
                 Ok(n) => {
+                    // self.len 加上以及读取的部分长度
                     self.len += n;
                     assert!(self.len <= CAP);
                 }
+                // 中断错误 
                 Err(ref e) if e.kind() == ErrorKind::Interrupted => continue,
+                // 遇到操作无效的DATA
                 Err(ref e) if e.kind() == ErrorKind::WouldBlock => return Ok(true),
                 Err(e) => return Err(e),
             }
@@ -152,13 +159,18 @@ impl Buf {
             // split_at_mut: Divides one mutable slice into two at an index.
             // split_at_mut 一个切片分成两个，以索引为界。
             let (b1, b2) = self.buf.split_at_mut(i2);
+            // 把刚才切出来的封装一下放进去
             bs.push(IoSliceMut::new(b2));
             if i1 > 0 {
+                // ???
                 bs.push(IoSliceMut::new(&mut b1[..i1]));
             }
         } else {
+            // ???
             bs.push(IoSliceMut::new(&mut self.buf[i2 - CAP..i1]));
         }
+
+        // ??????????切了装了就返回了？
         bs
     }
 

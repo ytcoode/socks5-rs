@@ -14,22 +14,36 @@ mod shutdown;
 
 #[derive(Debug)]
 pub enum State {
+    // 选择方法请求
     SelectMethodReq,
+    // 选择方法回复
     SelectMethodReply,
+    // 连接请求
     ConnectReq,
+    // 连接返回
     ConnectReply,
+    // 代理中
     Relay,
+
+    //关闭
     Shutdown,
 }
 
 pub struct Client {
+    // This Should be Client Connection.
     s1: TcpStream,
+    // This Should be Client Buffer.
     b1: Buf,
 
+    // This Should be Server Connection.
     s2: Option<TcpStream>, // 如果为None表示还没有建立到target的连接
+    // This Should be Server Buffer.
     b2: Buf,
 
+    // ???
     token: usize,
+
+    // Proxy Stage.
     state: State,
 }
 
@@ -55,6 +69,7 @@ impl Client {
     pub fn handle(&mut self, t: usize, e: &Event, r: &Registry) -> io::Result<()> {
         assert!(t == self.token || t == util::peer_token(self.token));
 
+        // we can read from socket.
         if e.is_readable() {
             match self.state {
                 SelectMethodReq => negotiate::select_method_req(self, r)?,
@@ -66,6 +81,7 @@ impl Client {
             }
         }
 
+        // we can write to from socket.
         if e.is_writable() {
             match self.state {
                 SelectMethodReq => (),
@@ -77,6 +93,7 @@ impl Client {
             }
         }
 
+        // hup is a Exception.
         if e.is_hup() {
             return Err(Error::new(ErrorKind::UnexpectedEof, "hup"));
         }

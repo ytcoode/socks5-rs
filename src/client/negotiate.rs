@@ -56,7 +56,6 @@ pub fn select_method_req(c: &mut Client, r: &Registry) -> io::Result<()> {
     // n is NMETHODS + 2.
     let n = 2 + *current_nmethods as usize;
 
-    
     if len < n {
         return Ok(()); // 数据还不够，等待epollin
     }
@@ -76,11 +75,13 @@ pub fn select_method_req(c: &mut Client, r: &Registry) -> io::Result<()> {
     c.b2.write_u8(VERSION);
     c.b2.write_u8(0);
 
+    // Set Status to "Method Reply" 
     c.set_state(State::SelectMethodReply);
     select_method_reply(c, r)
 }
 
 pub fn select_method_reply(c: &mut Client, r: &Registry) -> io::Result<()> {
+    // 将 Client TCPStream 的数据写入Client的buf2
     c.b2.write(&mut c.s1)?;
     if c.b2.len() > 0 {
         return Ok(()); // 还有剩余字节没写完，等待epollout
