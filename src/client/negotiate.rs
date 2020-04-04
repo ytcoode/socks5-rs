@@ -162,6 +162,8 @@ pub fn connect_req(c: &mut Client, r: &Registry) -> io::Result<()> {
         _ => return Err(Error::new(ErrorKind::InvalidData, "ATYP")),
     }
 
+    println!("{} <=> {}",c.client_addr().unwrap() ,&addr);
+
     let s = TcpStream::connect(addr)?;
     s.set_nodelay(true)?;
 
