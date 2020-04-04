@@ -135,16 +135,22 @@ impl Buf {
     }
 
     fn io_slice_read(&mut self) -> Vec<IoSliceMut> {
+        // Assert Currently length less than CAP.
         assert!(self.len <= CAP);
         if self.len == CAP {
             return vec![];
         }
 
+        // New a Vec that Size is 2.
         let mut bs = Vec::with_capacity(2);
+        // ???
         let i1 = self.idx;
+        // ???
         let i2 = self.idx + self.len;
 
         if i2 < CAP {
+            // split_at_mut: Divides one mutable slice into two at an index.
+            // split_at_mut 一个切片分成两个，以索引为界。
             let (b1, b2) = self.buf.split_at_mut(i2);
             bs.push(IoSliceMut::new(b2));
             if i1 > 0 {

@@ -17,13 +17,17 @@ mod util;
 const SERVER: Token = Token(0);
 
 fn main() -> io::Result<()> {
+    // Address
     let mut addr = "0.0.0.0:".to_owned();
+    // Port Params
     if let Some(port) = env::args().nth(1) {
         addr.push_str(&port);
     } else {
+        // if params is null
         addr.push_str("9999");
     }
 
+    // is IPv4 ?
     let sock = TcpBuilder::new_v4()?;
 
     if cfg!(unix) {
@@ -49,7 +53,7 @@ fn main() -> io::Result<()> {
             match event.token() {
                 SERVER => {
                     server::accept(&listener, &mut slab, poll.registry())?;
-                }
+                },
                 Token(t) => {
                     let k = util::token_to_key(t);
                     if let Some(c) = slab.get_mut(k) {

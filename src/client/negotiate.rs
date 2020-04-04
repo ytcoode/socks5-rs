@@ -14,10 +14,15 @@ use std::str;
 const VERSION: u8 = 0x05;
 
 pub fn select_method_req(c: &mut Client, r: &Registry) -> io::Result<()> {
+    // b is Buf.
     let b = &mut c.b1;
+    // read bytes to b from TcpStream.
+    // ea is Successful ?
     let ea = b.read(&mut c.s1)?;
 
+    // bytes length.
     let len = b.len();
+    // is bytes is Zero.
     if len == 0 && !ea {
         return Err(Error::new(ErrorKind::UnexpectedEof, "select_method_req"));
     }
@@ -32,16 +37,26 @@ pub fn select_method_req(c: &mut Client, r: &Registry) -> io::Result<()> {
 
     */
 
+    // Currently Connention Version.
+    let current_version =  &b[0];
+    // Currently Connention NMETHODS.
+    let current_nmethods = &b[1];
+
+   // if length less than 2， then Bytes only Version, NMETHODS is empty.
+   // 如果长度小于2,那就是只有版本号，但是没有NMETHODS, 那是不行的。
     if len < 2 {
         return Ok(());
     }
 
-    if b[0] != VERSION {
+    // b[0] must is Version.
+    if current_version != &VERSION {
         return Err(Error::new(ErrorKind::InvalidData, "version"));
     }
 
-    let n = 2 + b[1] as usize;
+    // n is NMETHODS + 2.
+    let n = 2 + *current_nmethods as usize;
 
+    
     if len < n {
         return Ok(()); // 数据还不够，等待epollin
     }
