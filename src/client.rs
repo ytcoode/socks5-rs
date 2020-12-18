@@ -4,6 +4,7 @@ use mio::event::Event;
 use mio::net::TcpStream;
 use mio::*;
 use std::io;
+use std::net::SocketAddr;
 use std::io::Error;
 use std::io::ErrorKind;
 use State::*;
@@ -86,5 +87,9 @@ impl Client {
         }
 
         Ok(())
+    }
+
+    pub fn client_addr(&self) -> io::Result<SocketAddr> {
+        self.s1.peer_addr()
     }
 }
