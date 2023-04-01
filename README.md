@@ -1,3 +1,7 @@
+# Note
+
+***This project is deprecated and no longer maintained. Please use [ytcoode/bubble](https://github.com/ytcoode/bubble) instead.***
+
 # socks5-rs
 
 A socks5 server in Rust
